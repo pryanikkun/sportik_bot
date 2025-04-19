@@ -6,14 +6,22 @@ class TimeBasedModel(models.Model):
     class Meta:
         abstract = True
 
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='дата создания')
+    created_at = models.DateTimeField(
+        auto_now_add=True, null=True, verbose_name='Дата создания'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True, null=True, verbose_name='Дата обновления'
+    )
 
 
 class TGUser(TimeBasedModel):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True, verbose_name='пользователь')
+    # user = models.OneToOneField(
+    #   User, on_delete=models.CASCADE,
+    #   blank=True, null=True, verbose_name='Пользователь'
+    # )
     tg_id = models.BigIntegerField(unique=True, db_index=True, verbose_name='id Telegram')
     username = models.CharField(
-        max_length=64, verbose_name='Тег в ТГ'
+        max_length=64, blank=True, verbose_name='Тег в ТГ'
     )
     first_name = models.CharField(
         max_length=64, null=True, blank=True, verbose_name='Имя'
