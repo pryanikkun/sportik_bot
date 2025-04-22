@@ -2,7 +2,7 @@ from django.db import models
 from app_tg.models import TGUser
 
 
-class Type(models.TextChoices):
+class NotificationType(models.TextChoices):
     WATER = 'WATER'
     SPORT = 'SPORT'
     CHALLENGE = 'CHALLENGE'
@@ -12,7 +12,7 @@ class Type(models.TextChoices):
 
 
 class Notification(models.Model):
-    type = models.CharField(max_length=64, choices=Type.choices)
+    type = models.CharField(max_length=64, choices=NotificationType.choices)
     text = models.TextField()
 
     class Meta:
@@ -21,49 +21,36 @@ class Notification(models.Model):
 
 
 class NotificationSchedule(models.Model):
-    # Типы периодичности
     DAILY = 'daily'
-    WEEKLY = 'weekly'
     CUSTOM = 'custom'
-    NO = 'no'
+    NOPE = 'no'
 
     PERIODICITY_CHOICES = [
         (DAILY, 'Ежедневно'),
-        (WEEKLY, 'Еженедельно'),
         (CUSTOM, 'Произвольное расписание'),
-        (NO, 'Не оповещать')
+        (NOPE, 'Не оповещать')
     ]
 
     is_active = models.BooleanField(default=True, verbose_name='Активно')
-    message = models.TextField(verbose_name='Текст уведомления')
 
     # Основные параметры расписания
     periodicity = models.CharField(
         max_length=10,
         choices=PERIODICITY_CHOICES,
-        default=NO,
+        default=NOPE,
         verbose_name='Периодичность'
     )
 
     # Для ежедневных/еженедельных оповещений
-    time = models.TimeField(verbose_name='Время отправки')
-
-    # Для еженедельных оповещений
-    week_days = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        verbose_name='Дни недели (через запятую)',
-        help_text='1-Понедельник, 2-Вторник,..., 7-Воскресенье'
+    minute = models.CharField(
+        max_length=50, default='*', verbose_name='Минуты'
     )
-
-    # Для произвольного расписания (crontab-like)
-    cron_minute = models.CharField(max_length=50, default='*',
-                                   verbose_name='Минуты')
-    cron_hour = models.CharField(max_length=50, default='*',
-                                 verbose_name='Часы')
-    cron_day_of_week = models.CharField(max_length=50, default='*',
-                                        verbose_name='Дни недели')
+    hour = models.CharField(
+        max_length=50, default='*', verbose_name='Часы'
+    )
+    week_days = models.CharField(
+        max_length=50, default='*', verbose_name='Дни недели'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -78,36 +65,28 @@ class NotificationSchedule(models.Model):
         """Возвращает расписание в формате crontab"""
         if self.periodicity == self.CUSTOM:
             return {
-                'minute': self.cron_minute,
-                'hour': self.cron_hour,
+                'minute': self.minute,
+                'hour': self.hour,
                 'day_of_month': "*",
                 'month_of_year': "*",
-                'day_of_week': self.cron_day_of_week,
+                'day_of_week': self.week_days,
             }
         elif self.periodicity == self.DAILY:
             return {
-                'minute': self.time.minute,
-                'hour': self.time.hour,
+                'minute': self.minute,
+                'hour': self.hour,
                 'day_of_week': '*',
-            }
-        elif self.periodicity == self.WEEKLY:
-            return {
-                'minute': self.time.minute,
-                'hour': self.time.hour,
-                'day_of_week': self.week_days,
             }
 
     def get_schedule(self):
         return (
-            f"{self.cron_minute} {self.cron_hour} * * {self.cron_day_of_week}"
+            f"{self.minute} {self.hour} * * {self.week_days}"
         )
 
     def get_periodicity_display(self):
         """Возвращает строку с периодичностью"""
         if self.periodicity == self.DAILY:
             return 'Ежедневно'
-        elif self.periodicity == self.WEEKLY:
-            return 'Еженедельно'
         elif self.periodicity == self.CUSTOM:
             return 'Произвольное расписание'
         return 'Не оповещать'
@@ -129,7 +108,7 @@ class Subscription(models.Model):
     )
     type = models.CharField(
         max_length=64,
-        choices=Type.choices,
+        choices=NotificationType.choices,
         verbose_name='Тип уведомления'
     )
 
