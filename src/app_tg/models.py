@@ -15,11 +15,12 @@ class TimeBasedModel(models.Model):
 
 
 class TGUser(TimeBasedModel):
-    # user = models.OneToOneField(
-    #   User, on_delete=models.CASCADE,
-    #   blank=True, null=True, verbose_name='Пользователь'
-    # )
-    id = models.BigIntegerField(unique=True, db_index=True, verbose_name='id Telegram')
+    id = models.BigIntegerField(
+        primary_key=True,
+        unique=True,
+        db_index=True,
+        verbose_name='id Telegram'
+    )
     username = models.CharField(
         max_length=64, blank=True, verbose_name='Тег в ТГ'
     )
