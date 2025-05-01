@@ -5,6 +5,10 @@ from app_tg.models import TGUser
 
 class NotificationType(models.Model):
     type = models.CharField(max_length=64, null=False, blank=False)
+
+    class Meta:
+        verbose_name = 'Тип напоминалки'
+        verbose_name_plural = 'Типы напоминалок'
     # WATER = 'WATER'
     # SPORT = 'SPORT'
     # CHALLENGE = 'CHALLENGE'

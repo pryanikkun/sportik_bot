@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from asgiref.sync import sync_to_async
 from django.db import models
 
 
@@ -41,3 +41,18 @@ class TGUser(TimeBasedModel):
     def get_name(self):
         """Получение имя фамилия (мб не нужно)"""
         return f'{self.first_name} {self.last_name}'
+
+
+@sync_to_async
+def save_user(
+        id: int,
+        username: str,
+        first_name: str | None,
+        last_name: str | None,
+):
+    TGUser.objects.update_or_create(
+        id=id,
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+    )
