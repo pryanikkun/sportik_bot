@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.timezone import now
 from app_tg.models import TGUser
 
 
@@ -31,6 +32,18 @@ class Subscription(models.Model):
         NotificationType,
         on_delete=models.CASCADE,
         related_name='subscriptions'
+    )
+    last_notify = models.DateTimeField(
+        null=True,
+        blank=True,
+        default=now,
+        verbose_name='Дата последнего уведомления',
+    )
+    last_notification = models.ForeignKey(
+        Notification,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        verbose_name='Последнее уведомление',
     )
 
     class Meta:
