@@ -4,7 +4,7 @@ from aiogram.types import Message
 from aiogram import Router
 import tg_bot.keyboards.reply as rep_kb
 
-from app_tg.models import save_user
+from app_tg.db import save_user
 
 router_start = Router()
 

@@ -9,10 +9,10 @@ from .models import Notification, NotificationType, Subscription
 class NotificationTypeAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'type',
+        'name',
     )
-    list_editable = ('type',)
-    search_fields = ('type',)
+    list_editable = ('name',)
+    search_fields = ('name',)
 
 
 @admin.register(Notification)

@@ -1,14 +1,17 @@
 from django.db import models
 from django.utils.timezone import now
-from app_tg.models import TGUser
+from app_tg.models import TGUser, TimeBasedModel
 
 
 class NotificationType(models.Model):
-    type = models.CharField(max_length=64, null=False, blank=False)
+    name = models.CharField(max_length=64, null=False, blank=False)
 
     class Meta:
         verbose_name = 'Тип напоминалки'
         verbose_name_plural = 'Типы напоминалок'
+
+    def __str__(self):
+        return self.name
     # WATER = 'WATER'
     # SPORT = 'SPORT'
     # CHALLENGE = 'CHALLENGE'
@@ -26,7 +29,7 @@ class Notification(models.Model):
         verbose_name_plural = 'Напоминалки'
 
 
-class Subscription(models.Model):
+class Subscription(TimeBasedModel):
     """Подписка пользователя на тип уведомлений"""
     user = models.ForeignKey(
         TGUser, on_delete=models.CASCADE, related_name='subscriptions'
@@ -49,13 +52,23 @@ class Subscription(models.Model):
         null=True,
         verbose_name='Последнее уведомление',
     )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активна',
+    )
 
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'type'],
+                name='unique_user_type',
+            )
+        ]
 
     def __str__(self):
-        return f'{self.user.username} - {self.type}'
+        return f'{self.user.username} - {self.type.name}'
 
     @staticmethod
     def get_crontab_schedule(
