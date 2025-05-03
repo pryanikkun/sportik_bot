@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'app_tg.apps.AppTgConfig',
     'app_notification.apps.AppNotificationConfig',
-    'app_competition.apps.AppCompetitionConfig',
+    # 'app_competition.apps.AppCompetitionConfig',
 ]
 
 MIDDLEWARE = [

@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -15,11 +14,12 @@ class TimeBasedModel(models.Model):
 
 
 class TGUser(TimeBasedModel):
-    # user = models.OneToOneField(
-    #   User, on_delete=models.CASCADE,
-    #   blank=True, null=True, verbose_name='Пользователь'
-    # )
-    tg_id = models.BigIntegerField(unique=True, db_index=True, verbose_name='id Telegram')
+    id = models.BigIntegerField(
+        primary_key=True,
+        unique=True,
+        db_index=True,
+        verbose_name='id Telegram'
+    )
     username = models.CharField(
         max_length=64, blank=True, verbose_name='Тег в ТГ'
     )
@@ -35,7 +35,7 @@ class TGUser(TimeBasedModel):
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return f'{self.tg_id}'
+        return f'{self.id}'
 
     def get_name(self):
         """Получение имя фамилия (мб не нужно)"""

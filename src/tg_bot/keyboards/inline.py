@@ -3,6 +3,23 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 
+from app_notification.db import get_subscription_by_user
+from app_notification.models import NotificationType
+
+
+def add_cancel_button(buttons: list) -> list:
+    """Добавление кнопки отмены к клавиатуре"""
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text='Выход',
+                callback_data='cancel'
+            )
+        ]
+    )
+    return buttons
+
+
 inline_callback = InlineKeyboardMarkup(
     inline_keyboard=[
         [
@@ -32,3 +49,159 @@ inline_urls = InlineKeyboardMarkup(
         ]
     ]
 )
+
+inline_types = InlineKeyboardMarkup(
+    inline_keyboard=add_cancel_button(
+        [
+            [
+                InlineKeyboardButton(
+                    text=notification_type.name.title(),
+                    callback_data='type_' + str(notification_type.id)
+                )
+            ] for notification_type in NotificationType.objects.all()
+        ]
+    )
+)
+
+inline_minutes = InlineKeyboardMarkup(
+    inline_keyboard=add_cancel_button(
+        [
+            [
+                InlineKeyboardButton(text='00', callback_data='min_0'),
+                InlineKeyboardButton(text='10', callback_data='min_10'),
+                InlineKeyboardButton(text='20', callback_data='min_20'),
+            ],
+            [
+                InlineKeyboardButton(text='30', callback_data='min_30'),
+                InlineKeyboardButton(text='40', callback_data='min_40'),
+                InlineKeyboardButton(text='50', callback_data='min_50')
+            ]
+        ]
+    )
+)
+inline_hours = InlineKeyboardMarkup(
+    inline_keyboard=add_cancel_button(
+        [
+            [
+                InlineKeyboardButton(
+                    text=str(x), callback_data='hour_' + str(x),
+                ) for x in range(1, 7)
+            ],
+            [
+                InlineKeyboardButton(
+                    text=str(x), callback_data='hour_' + str(x),
+                ) for x in range(7, 13)
+            ],
+            [
+                InlineKeyboardButton(
+                    text=str(x), callback_data='hour_' + str(x),
+                ) for x in range(13, 19)
+            ],
+            [
+                InlineKeyboardButton(
+                    text=str(x), callback_data='hour_' + str(x),
+                ) for x in range(19, 25)
+            ],
+        ]
+    )
+)
+
+
+def days_keyboard(selected_days: list[int] = None) -> InlineKeyboardMarkup:
+    selected_days = selected_days or []
+    days = [
+        ("Понедельник", 0),
+        ("Вторник", 1),
+        ("Среда", 2),
+        ("Четверг", 3),
+        ("Пятница", 4),
+        ("Суббота", 5),
+        ("Воскресенье", 6)
+    ]
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+
+    # Добавляем кнопки с днями
+    row = []
+    for day_name, day_number in days:
+        prefix = "✅ " if day_number in selected_days else ""
+        row.append(InlineKeyboardButton(
+            text=f"{prefix}{day_name}",
+            callback_data=f"day_{day_number}"
+        ))
+        if len(row) == 1:
+            keyboard.inline_keyboard.append(row)
+            row = []
+
+    # Добавляем кнопку ежедневно
+    keyboard.inline_keyboard.append([
+        InlineKeyboardButton(
+            text="Ежедневно",
+            callback_data="days_all"
+        )
+    ])
+    # Добавляем кнопку подтверждения
+    keyboard.inline_keyboard.append([
+        InlineKeyboardButton(
+            text="Готово",
+            callback_data="days_done"
+        )
+    ])
+
+    keyboard.inline_keyboard.append([
+        InlineKeyboardButton(
+            text='Выход',
+            callback_data='cancel'
+        )
+    ])
+
+    return keyboard
+
+
+async def inline_unsub(user_id: int):
+    """Ленивая клавиатура для отписки"""
+    subscriptions = await get_subscription_by_user(user_id)
+    return InlineKeyboardMarkup(
+        inline_keyboard=add_cancel_button(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=f"{sub.type.name.title()}",
+                        callback_data=f"unsub_{sub.id}"
+                    )
+                ] for sub in subscriptions
+            ]
+        )
+    )
+
+# def inline_unsub(sub_list: list | None = None) -> InlineKeyboardMarkup:
+#     """Создание инлайн-клавиатуры для отписки от подписки."""
+#     subscriptions = await get_subscription_by_user(user_id)
+#     sub_list = sub_list or []
+#     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+#
+#     # Добавляем кнопки с подписками
+#     for sub in subscriptions:
+#         prefix = "✅ " if sub.id in sub_list else ""
+#         keyboard.add(
+#             InlineKeyboardButton(
+#                 text=f"{prefix}{sub.type.name.title()}",
+#                 callback_data=f"unsubscribe_{sub.id}"
+#             )
+#         )
+#
+#     # Добавляем кнопку отмены
+#     keyboard.add(
+#         InlineKeyboardButton(
+#             text="Готово",
+#             callback_data="done"
+#         )
+#     )
+#     keyboard.add(
+#         InlineKeyboardButton(
+#             text="Отмена",
+#             callback_data="cancel"
+#         )
+#     )
+#
+#     return keyboard
