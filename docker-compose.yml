@@ -1,7 +1,7 @@
 version: '3.7'
 
 services:
-  web: # &sportik
+  web:
     container_name: sport_bot
     build: ./src
     restart: always
@@ -41,32 +41,37 @@ services:
     networks:
        - bot_bridge
 
-#  redis:
-#    container_name: redis_bot
-#    image: redis/redis-stack-server:latest
-#    environment:
-#      - REDIS_ARGS=--save 1200 32
-#    volumes:
-#      - ./redis/data:/data
-#    ports:
-#      - "6399:6379"
-#    restart: unless-stopped
-#    logging:
-#      options:
-#        max-size: 50m
-#    networks:
-#      - bot_bridge
-#
-#  celery:
-#    <<: *sportik
-#    container_name: celery_bot
-#    entrypoint: /bin/bash -c "celery -A web worker -l INFO"
-#    environment:
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
-#    ports: []
-#    networks:
-#      - bot_bridge
+  redis:
+    container_name: redis_bot
+    image: redis/redis-stack-server:latest
+    volumes:
+      - ./redis/data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 50m
+    networks:
+      - bot_bridge
+
+  celery_worker:
+    container_name: celery_bot
+    entrypoint: /bin/bash -c "celery -A web worker -l INFO"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - bot_bridge
+
+  celery_beat:
+    container_name: celery_beat_bot
+    entrypoint: /bin/bash -c "celery -A web beat -l INFO"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - bot_bridge
 
 networks:
   bot_bridge:

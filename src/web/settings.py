@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'django_celery_beat',
+
     'app_tg.apps.AppTgConfig',
     'app_notification.apps.AppNotificationConfig',
     # 'app_competition.apps.AppCompetitionConfig',
@@ -159,3 +162,5 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_INCLUDE = ['tasks']
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
