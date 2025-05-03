@@ -35,10 +35,11 @@ async def get_beautiful_schedule(schedule: dict) -> str:
     }
     days = schedule.get('days')
     hour = schedule.get('hour')
-    # Что тут будет строка или инт?
     minutes = schedule.get('minutes')
     if minutes == 0:
         minutes = '00'
+    if hour < 10:
+        hour = f"0{hour}"
     days_str = (
         'ежедневно' if days == list(range(7))
         else ', '.join([days_dict[day] for day in days])
@@ -46,7 +47,7 @@ async def get_beautiful_schedule(schedule: dict) -> str:
     return f"{days_str} в {hour}:{minutes}"
 
 
-@router_subscription.message(Command('subscribe_list'))
+@router_subscription.message(Command('subscription_list'))
 async def sub_list(message: Message):
     """Показать список подписок."""
     subscriptions = await get_subscription_by_user(message.from_user.id)
@@ -84,14 +85,15 @@ async def unsub_callback(callback: CallbackQuery):
         )
         await callback.answer("Что-то пошло не так, попробуй позже")
         return
-    await callback.answer(
-        "Всё, не буду больше тебе писать "
-        "(шучу (¬‿¬ ), жду твоих подписочек)",
-        show_alert=True
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(
+        "Всё, не буду больше тебе писать\n"
+        "(шучу (¬‿¬ ), жду твоих подписочек)"
     )
 
 
 class SubState(StatesGroup):
+    user_id = State()
     type = State()
     hour = State()
     minutes = State()
@@ -101,6 +103,8 @@ class SubState(StatesGroup):
 @router_subscription.message(Command('subscribe'))
 async def sub_type(message: Message, state: FSMContext):
     """Начало оформления подписки. Выбор типа."""
+    await state.set_state(SubState.user_id)
+    await state.update_data(user_id=message.from_user.id)
     await state.set_state(SubState.type)
     await message.answer(
         "Ну вот ты и дошел до регистрации. Готовься, придётся много тыкать.\n"
@@ -113,10 +117,12 @@ async def sub_type(message: Message, state: FSMContext):
     )
 
 
-@router_subscription.callback_query(SubState.type)
+@router_subscription.callback_query(SubState.type, F.data.startswith("type_"))
 async def sub_days(callback: CallbackQuery, state: FSMContext):
     """Сохранение типа подписки и выбор дня."""
-    await state.update_data(type=int(callback.data))
+    choice = callback.data.split("_")[1]
+    await state.update_data(type=int(choice))
+    await callback.message.edit_reply_markup()
     await state.set_state(SubState.days)
     await callback.message.answer(
         "Предупреждаю, раз в неделю я точно буду тебя тормошить, "
@@ -130,7 +136,7 @@ async def sub_days(callback: CallbackQuery, state: FSMContext):
 async def process_days_selection(callback: CallbackQuery, state: FSMContext):
     """Процесс выбора дней."""
     choice = callback.data.split("_")[1]
-    day_number = int(choice if choice != "all" else -1)
+    day_number = int(choice)
     data = await state.get_data()
     selected_days = data.get("days", [])
 
@@ -148,21 +154,24 @@ async def process_days_selection(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router_subscription.callback_query(SubState.days, F.data == "days_done")
+@router_subscription.callback_query(SubState.days, F.data.startswith("days_"))
 async def process_days_done(callback: CallbackQuery, state: FSMContext):
     """Завершение выбора дней. Переход к выбору часов."""
-    data = await state.get_data()
-    selected_days = data.get("days", [])
+    choice = callback.data.split("_")[1]
+    if choice == 'all':
+        selected_days = list(range(7))
+    else:
+        data = await state.get_data()
+        selected_days = data.get("days", [])
 
     if not selected_days:
         await callback.answer("Нужно выбрать хотя бы один день!",
                               show_alert=True)
         return
-    if -1 in selected_days:
-        selected_days = list(range(7))
 
     await state.update_data(days=selected_days)
     await callback.message.edit_reply_markup()
+    await state.set_state(SubState.hour)
     await callback.message.answer(
         "Фух, с днями разобрались, дело за малым.\n"
         "Какой час ты хочешь установить? "
@@ -171,10 +180,12 @@ async def process_days_done(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router_subscription.callback_query(SubState.hour)
+@router_subscription.callback_query(SubState.hour, F.data.startswith("hour_"))
 async def sub_hours(callback: CallbackQuery, state: FSMContext):
     """Сохранение выбора часа. Переход к выбору минут."""
-    await state.update_data(hour=int(callback.data))
+    choice = callback.data.split("_")[1]
+    await state.update_data(hour=int(choice))
+    await callback.message.edit_reply_markup()
     await state.set_state(SubState.minutes)
     await callback.message.answer(
         "Теперь минуты... (начинается барабанная дробь ヾ( `ー´)シ)",
@@ -182,12 +193,22 @@ async def sub_hours(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router_subscription.callback_query(SubState.minutes)
+@router_subscription.callback_query(F.data == "cancel")
+async def sub_cancel(callback: CallbackQuery, state: FSMContext):
+    """Отмена подписки."""
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("Штош, тогда в следующий раз 〜〜(／￣▽)／")
+    await state.clear()
+
+
+@router_subscription.callback_query(SubState.minutes, F.data.startswith("min_"))
 async def sub_final(callback: CallbackQuery, state: FSMContext):
     """Сохранение выбора минут. Завершение оформления подписки."""
-    await state.update_data(minutes=int(callback.data))
+    choice = callback.data.split("_")[1]
+    await state.update_data(minutes=int(choice))
+    await callback.message.edit_reply_markup()
     data = await state.get_data()
-    user_id = callback.message.from_user.id
+    user_id = data.get('user_id')
     type = data.get('type')
     schedule = {
         'hour': data.get('hour'),
@@ -204,14 +225,14 @@ async def sub_final(callback: CallbackQuery, state: FSMContext):
         logging.exception(
             f"Проблемы с подпиской у пользователя {user_id}"
             f" на тип {type} c расписанием {schedule}")
-        await callback.answer("Что-то пошло не так, попробуй позже")
+        await callback.message.answer("Что-то пошло не так, попробуй позже")
         return
 
     await callback.message.answer(
         "Регистрация завершена ＼(≧▽≦)／ \n"
-        "И я всё запомнил. "
+        "И я всё запомнил. \n\n"
         "Хочешь подписаться на что-то ещё? Тыкни /subscribe\n"
-        "Если хочешь глянуть все свои подписки, то /subscribe_list\n"
+        "Если хочешь глянуть все свои подписки, то /subscription_list\n"
         "Вдруг передумал и хочешь отписаться от чего-то тыкай /unsubscribe\n"
     )
     await state.clear()

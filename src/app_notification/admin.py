@@ -11,7 +11,6 @@ class NotificationTypeAdmin(admin.ModelAdmin):
         'id',
         'name',
     )
-    list_editable = ('name',)
     search_fields = ('name',)
 
 
@@ -34,8 +33,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
         'user',
         'schedule',
         'type',
+        'is_active',
     )
-    list_filter = ('user', 'type')
+    list_filter = ('user', 'type', 'is_active')
     search_fields = (
         'user__username',
         'user__first_name',

@@ -11,9 +11,11 @@ def save_subscription(
     """Сохранение или обновление подписки в БД"""
     Subscription.objects.update_or_create(
         user_id=user_id,
-        schedule=schedule,
         type_id=type_id,
-        is_active=True,
+        defaults={
+            'schedule': schedule,
+            'is_active': True,
+        }
     )
 
 
@@ -21,9 +23,10 @@ def save_subscription(
 def get_subscription_by_user(
         user_id: int,
 ):
-    """Получение подписки из БД"""
+    """Получение активных подписок из БД"""
     return Subscription.objects.filter(
         user_id=user_id,
+        is_active=True,
     ).all()
 
 

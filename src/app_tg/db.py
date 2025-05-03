@@ -12,7 +12,9 @@ def save_user(
     """Сохранение или обновления пользователя в БД."""
     TGUser.objects.update_or_create(
         id=id,
-        username=username,
-        first_name=first_name,
-        last_name=last_name,
+        defaults={
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
     )

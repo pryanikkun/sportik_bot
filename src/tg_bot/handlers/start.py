@@ -19,6 +19,9 @@ async def cmd_start(message: Message):
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
+        print(
+            f'Пользователь {message.from_user.id} '
+        )
     except Exception:
         logging.exception(
             'Ошибка сохранения пользователя. Данные: '
